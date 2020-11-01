@@ -9,9 +9,10 @@ import nltk
 
 nltk.download('punkt')
 
-# takes 36 seconds for 50ms version, 2 mins for 10ms version
+## Much of code below taken/modified from Roddy et al. (2018). The code-sharing
+## ensures is that I extract vocabulary in a way that can be funneled into the
+## rest of Roddy et al.'s pipeline.
 
-# select settings for 50ms (0) or 10ms (1) features
 if len(sys.argv)==2:
     speed_setting = int(sys.argv[1])
 else:
@@ -67,6 +68,9 @@ for i in range(0,len(files_feature_list)):
     frame_times=np.array(pd.read_csv(path_to_features+files_feature_list[i],delimiter=',',usecols = [0])['frame_time'])
     word_values = np.zeros((len(frame_times),max_len_setting))
     check_next_word_array = np.zeros((len(frame_times),))
+
+    ####### stuff added/modified by Elliott Gruzin below ###########
+
     e = xml.etree.ElementTree.parse(files_annotation_list[i]).getroot()
     annotation_data = []
     stored_words = []
@@ -100,6 +104,9 @@ for i in range(0,len(files_feature_list)):
                 continue
             if atype.get('{http://nite.sourceforge.net/}end') == 'n/a':
                 continue
+
+        ######## end of significantly modified content ###############
+
         if end_indx_advanced < len(word_values):
             # word_values[end_indx_advanced] = curr_words
             if (np.min(np.where(word_values[end_indx_advanced]==0)[0]) > 0):

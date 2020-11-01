@@ -11,12 +11,6 @@ def find_nearest(array,value):
     idx = (np.abs(array-value)).argmin()
     return idx
 
-# file_jar = open('file_list.pkl', 'rb')
-# file_set = pickle.load(file_jar)
-# file_list= list(file_set)
-
-# for file in file_list:
-
 t_1 = t.time()
 path_to_features='../switchboard_version/data/signals/gemaps_features_50ms/'
 path_to_annotations='./nxt/xml/terminals/'
@@ -40,6 +34,7 @@ for file in files_feature_list:
     files_annotation_list.append('nxt/xml/terminals/sw{}.{}.terminals.xml'.format(num,speaker))
     files_output_list.append('voice_activity/sw0{}.{}.csv'.format(num,base_name.split('.')[1]))
 
+## loop annotates start time of each word
 
 for i in range(0,len(files_feature_list)):
     frame_times=np.array(pd.read_csv(path_to_features+files_feature_list[i],delimiter=',',usecols = [1])['frameTime'])
@@ -54,11 +49,10 @@ for i in range(0,len(files_feature_list)):
     prev_end = 0
     next_start = None
     last_unaligned = False
+
+    ## word in NXT format -- get start and end time
+
     for atype in e.findall('word'):
-        # print(atype.get('{http://nite.sourceforge.net/}start'))
-        # print(atype.get('{http://nite.sourceforge.net/}end'))
-        #
-        # exit()
         try:
             next_start = float(atype.get('{http://nite.sourceforge.net/}start'))
 
@@ -68,6 +62,8 @@ for i in range(0,len(files_feature_list)):
 
             annotation_data.append((float(atype.get('{http://nite.sourceforge.net/}start')), float(atype.get('{http://nite.sourceforge.net/}end'))))
             prev_end = float(atype.get('{http://nite.sourceforge.net/}end'))
+
+        ## some words not aligned -- just exclude these
 
         except ValueError:
 
