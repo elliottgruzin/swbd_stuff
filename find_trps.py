@@ -91,30 +91,6 @@ json_dict = json.loads('{"feature_dict_list": [{"folder_path": "./data/extracted
 
 locals().update(json_dict)
 
-# # print features:
-# feature_print_list = list()
-# for feat_dict in feature_dict_list:
-#     for feature in feat_dict['features']:
-#         feature_print_list.append(feature)
-# print_list = ' '.join(feature_print_list)
-# print('Features being used: ' + print_list)
-# print('Early stopping: ' + str(early_stopping))
-#
-# lstm_settings_dict = {
-#     'no_subnets': no_subnets,
-#     'hidden_dims': {
-#         'master': hidden_nodes_master,
-#         'acous': hidden_nodes_acous,
-#         'visual': hidden_nodes_visual,
-#     },
-#     'uses_master_time_rate': {},
-#     'time_step_size': {},
-#     'is_irregular': {},
-#     'layers': num_layers,
-#     'dropout': dropout_dict,
-#     'freeze_glove':freeze_glove_embeddings
-# }
-#
 # %% Get OS type and whether to use cuda or not
 plat = platform.linux_distribution()[0]
 my_node = platform.node()
@@ -143,27 +119,6 @@ else:
 # %% Data loaders
 t1 = t.time()
 
-# training set data loader
-# print('feature dict list:', feature_dict_list)
-# train_dataset = TurnPredictionDataset(feature_dict_list, annotations_dir, train_list_path, sequence_length,
-#                                       prediction_length, 'train', data_select=data_set_select)
-# train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, num_workers=0,  # previously shuffle = shuffle
-#                               drop_last=True, pin_memory=p_memory)
-# feature_size_dict = train_dataset.get_feature_size_dict()
-#
-# if slow_test:
-#     # slow test loader
-#     test_dataset = TurnPredictionDataset(feature_dict_list, annotations_dir, test_list_path, sequence_length,
-#                                          prediction_length, 'test', data_select=data_set_select)
-#     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0, drop_last=False,
-#                                  pin_memory=p_memory)
-# else:
-#     # quick test loader
-#     test_dataset = TurnPredictionDataset(feature_dict_list, annotations_dir, test_list_path, sequence_length,
-#                                          prediction_length, 'train', data_select=data_set_select)
-#     test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True, num_workers=0, drop_last=False)
-#
-
 complete_dataset = TurnPredictionDataset(feature_dict_list, annotations_dir, complete_path, sequence_length,
                                       prediction_length, 'test', data_select=data_set_select)
 
@@ -174,12 +129,7 @@ feature_size_dict = complete_dataset.get_feature_size_dict()
 
 print('time taken to load data: ' + str(t.time() - t1))
 
-# %% Load list of test files
-# test_file_list = list(pd.read_csv(test_list_path, header=None, dtype=str)[0])
-# train_file_list = list(pd.read_csv(train_list_path, header=None, dtype=str)[0])
 complete_file_list = list(pd.read_csv(complete_path, header=None, dtype=str)[0])
-# %% load evaluation data: hold_shift, onsets, overlaps
-# structure: hold_shift.hdf5/50ms-250ms-500ms/hold_shift-stats/seq_num/g_f_predict/[index,i]
 
 lstm = torch.load('lstm_models/ling_50ms.p')
 ffnn = torch.load('smol_from_big.p')
@@ -255,6 +205,9 @@ def find_trps():
             #     batch_indx][:,:20].data.cpu().numpy()
             results_dict[file_name + '/' + g_f_indx][time_indices[0]:time_indices[1]] = out_test[
                 batch_indx].data.cpu().numpy()
+            
+    ################ elliott gruzin's addition ############################
+            
     for file_name in complete_file_list:
         # print(file_name)
         frame_no = 0
@@ -265,35 +218,20 @@ def find_trps():
         for frame_indx, frame in enumerate(results_dict[file_name +'/g']):
 
             ############# heuristics approach #################
+            
             g_prob = np.sum(results_dict[file_name + '/g'][frame_indx,][:20])/20
             f_prob = np.sum(results_dict[file_name + '/f'][frame_indx,][:20])/20
 
             distance = (g_prob - f_prob)**2
 
             trp = 0
-
-            # if g_prob > 0.01 and f_prob > 0.01:
-            #     trp = 1
-            # print(distance)
-            # print(distance)
-
+            
             if distance < 1.5:
-                # print('yarrr')
                 trp = 1
 
-            # if prev_value_f != None:
-            #         if prev_value_f > prev_value_g and g_prob > f_prob:
-            #             trp = 1
-            #         elif prev_value_g > prev_value_f and f_prob > g_prob:
-            #             trp = 1
-            #
-            # prev_value_f = f_prob
-            # prev_value_g = g_prob
-            #
-            # print('yahooo')
             trp_dict[file_name][frame_indx] = trp
             distance_dict[file_name][frame_indx] = distance
-            #
+            
             ########## through ffnn
 
             # g_speech = results_dict[file_name +'/g'][frame_indx]
